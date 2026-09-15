@@ -6,19 +6,20 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as rules from '../js/rules.js';
+import '../js/difficulty.js';
 
 const currentUrl = new URL('../js/engines/engine.worker.js', import.meta.url);
-const central = [[15,15],[16,16],[14,16],[16,14],[14,14],[13,15],[17,15],
-  [15,17],[15,13],[13,13],[17,17],[13,17],[17,13],[18,14]];
-const spread = [[4,4],[5,5],[24,24],[25,25],[4,24],[5,23],[24,4],
-  [23,5],[14,14],[15,15],[13,16],[16,13],[6,6],[23,23]];
+const central = [[7,7],[8,8],[6,8],[8,6],[6,6],[5,7],[9,7],
+  [7,9],[7,5],[5,5],[9,9],[5,9],[9,5],[10,6]];
+const spread = [[2,2],[3,3],[11,11],[12,12],[2,11],[3,10],[11,2],
+  [10,3],[6,6],[7,7],[5,8],[8,5],[4,4],[10,10]];
 const openings = [
   ...[4,8,12,14].map(n => ({ name: 'central_' + n, coordinates: central.slice(0,n) })),
   ...[4,8,12,14].map(n => ({ name: 'spread_' + n, coordinates: spread.slice(0,n) })),
-  { name: 'corner_nw', coordinates: central.map(([r,c]) => [r-13,c-13]) },
-  { name: 'corner_se', coordinates: central.map(([r,c]) => [r+11,c+11]) },
-  { name: 'asymmetric_a', coordinates: [[15,15],[15,16],[14,15],[16,15],[13,16],[14,16]] },
-  { name: 'asymmetric_b', coordinates: [[15,15],[14,14],[16,14],[14,16],[17,15],[15,14]] }
+  { name: 'corner_nw', coordinates: central.map(([r,c]) => [r-5,c-5]) },
+  { name: 'corner_se', coordinates: central.map(([r,c]) => [r+4,c+4]) },
+  { name: 'asymmetric_a', coordinates: [[7,7],[7,8],[6,7],[8,7],[5,8],[6,8]] },
+  { name: 'asymmetric_b', coordinates: [[7,7],[6,6],[8,6],[6,8],[9,7],[7,6]] }
 ];
 
 function seed(coordinates) {
@@ -35,7 +36,7 @@ if (isMainThread) {
   const output = resolve(process.argv[3]);
   const hash = url => createHash('sha256').update(readFileSync(new URL(url))).digest('hex');
   const report = { date: new Date().toISOString(), node: process.version, size: rules.SIZE,
-    level: 6, moveBudgetMs: 4000, extraMoveLimit: 80, concurrency: 4,
+    level: 6, moveBudgetMs: globalThis.Difficulty.getLevel(6).timeMs, extraMoveLimit: 80, concurrency: 4,
     currentSha256: hash(currentUrl), baselineSha256: hash(baseline), baseline, games: [] };
   const jobs = openings.flatMap(opening => {
     seed(opening.coordinates);

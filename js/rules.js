@@ -4,15 +4,15 @@
  * 只管"棋盘上发生了什么"：落子是否合法、是否触发禁手、是否形成五连、是否满盘、
  * 悔棋退几步、坐标怎么念。不做任何 AI 判断，也不碰 DOM。
  *
- * 棋盘表示：30×30 一维数组，index = row * SIZE + col。
+ * 棋盘表示：15×15 一维数组，index = row * SIZE + col。
  *   0 = 空，1 = 黑，2 = 白。黑先行。
- * 坐标记法：列 A..AD（左→右），行 1..30（下→上，row 0 在最上面）。
- * 偶数边长没有唯一中心，默认开局取中央四点的右下点 P15（index 465）。
+ * 坐标记法：列 A..O（左→右），行 1..15（下→上，row 0 在最上面）。
+ * 默认开局取中心 H8（index 112）。
  *
  * @license MIT
  */
 
-export const SIZE = 30;
+export const SIZE = 15;
 export const AREA = SIZE * SIZE;
 export const EMPTY = 0;
 export const BLACK = 1;
@@ -32,15 +32,15 @@ const DIRS = [
   [1, -1]
 ];
 
-/** 默认开局点：中央四点的右下点 */
+/** 默认开局点：棋盘中心 */
 export const CENTER = Math.floor(SIZE / 2) * SIZE + Math.floor(SIZE / 2);
 
-/** 列名 A..Z、AA..AD，坐标与视图共用 */
-export const COL_NAMES = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').concat(['AA', 'AB', 'AC', 'AD']);
+/** 列名 A..O，坐标与视图共用 */
+export const COL_NAMES = 'ABCDEFGHIJKLMNO'.split('');
 
 /**
- * 下标 ↔ 坐标名互转。index 465 ↔ "P15"。
- * 行号显示为 SIZE - row：row 0（最上面一行）是第 30 行。
+ * 下标 ↔ 坐标名互转。index 112 ↔ "H8"。
+ * 行号显示为 SIZE - row：row 0（最上面一行）是第 15 行。
  */
 export function coordName(index) {
   const col = index % SIZE;
@@ -49,7 +49,7 @@ export function coordName(index) {
 }
 
 export function indexFromCoord(name) {
-  const match = /^([A-Z]{1,2})([1-9]\d?)$/.exec(name);
+  const match = /^([A-Z])([1-9]\d?)$/.exec(name);
   if (!match) return -1;
   const col = COL_NAMES.indexOf(match[1]);
   const rowNum = Number(match[2]);

@@ -41,40 +41,41 @@ function engineWith(def, now = () => performance.now(), source = workerSource) {
 }
 
 const definition = { depth: 4, timeMs: 60000, candWidth: 20, vcf: false };
-const central = movesOf([[15,15],[16,16],[14,16],[16,14],[14,14],[13,15],[17,15],
-  [15,17],[15,13],[13,13],[17,17],[13,17],[17,13],[18,14]]);
-const spread = movesOf([[4,4],[5,5],[24,24],[25,25],[4,24],[5,23],[24,4],
-  [23,5],[14,14],[15,15],[13,16],[16,13],[6,6],[23,23]]);
+const central = movesOf([[7,7],[8,8],[6,8],[8,6],[6,6],[5,7],[9,7],
+  [7,9],[7,5],[5,5],[9,9],[5,9],[9,5],[10,6]]);
+const spread = movesOf([[2,2],[3,3],[11,11],[12,12],[2,11],[3,10],[11,2],
+  [10,3],[6,6],[7,7],[5,8],[8,5],[4,4],[10,10]]);
 
 const engine = engineWith(definition);
-assert.equal(rules.SIZE, 30);
-assert.equal(rules.AREA, 900);
+assert.equal(rules.SIZE, 15);
+assert.equal(rules.AREA, 225);
+assert.equal(globalThis.Difficulty.getLevel(6).timeMs, 5000);
 assert.equal(engine.SIZE, rules.SIZE);
 assert.equal(engine.CENTER, rules.CENTER);
-assert.equal(rules.coordName(rules.CENTER), 'P15');
+assert.equal(rules.coordName(rules.CENTER), 'H8');
 for (let i = 0; i < rules.AREA; i++) assert.equal(rules.indexFromCoord(rules.coordName(i)), i);
-for (const invalid of ['A0', 'A31', 'AE1', 'AA01', 'AD300', 'a1', '', null]) {
+for (const invalid of ['A0', 'A16', 'P1', 'P15', 'AA1', 'O16', 'A01', 'AD300', 'a1', '', null]) {
   assert.equal(rules.indexFromCoord(invalid), -1);
 }
-assert.equal(rules.coordName(0), 'A30');
-assert.equal(rules.coordName(899), 'AD1');
+assert.equal(rules.coordName(0), 'A15');
+assert.equal(rules.coordName(224), 'O1');
 assert.equal(engine.search([], 3).candidates[0].move, rules.CENTER);
 assert.equal(liveEngine.search([], 6).candidates[0].move, rules.CENTER, '真实 ES module 入口可加载与搜索');
 assert.equal(engine.genCandidateCount([rules.CENTER]), 24);
 assert.equal(engine.genCandidateCount([0]), 8);
 
-// 新增区域的落子、胜利和悔棋；禁手依旧由裁判决定。
+// 棋盘边缘的落子、胜利和悔棋；禁手依旧由裁判决定。
 const game = rules.createGame();
-for (const move of movesOf([[29,25],[0,0],[29,26],[0,2],[29,27],[0,4],[29,28],[0,6]])) {
+for (const move of movesOf([[14,10],[0,0],[14,11],[0,2],[14,12],[0,4],[14,13],[0,6]])) {
   assert.equal(rules.place(game, move).legal, true);
 }
-assert.equal(rules.place(game, cell(29,29)).win, true);
+assert.equal(rules.place(game, cell(14,14)).win, true);
 assert.equal(game.winner, rules.BLACK);
 assert.equal(rules.undo(game, 2), 2);
 assert.equal(game.over, false);
-assert.equal(game.board[cell(29,29)], rules.EMPTY);
+assert.equal(game.board[cell(14,14)], rules.EMPTY);
 
-// 无五连的近满盘，最后一手白棋填满第 900 点。
+// 无五连的近满盘，最后一手黑棋填满第 225 点。
 const draw = rules.createGame();
 const colors = [[], []];
 for (let r = 0; r < rules.SIZE; r++) for (let c = 0; c < rules.SIZE; c++) {
@@ -82,26 +83,23 @@ for (let r = 0; r < rules.SIZE; r++) for (let c = 0; c < rules.SIZE; c++) {
   draw.board[cell(r,c)] = color;
   colors[color - 1].push(cell(r,c));
 }
-const lastWhite = colors[1].pop();
-draw.board[lastWhite] = rules.EMPTY;
-colors[0].forEach((p, i) => {
-  draw.moves.push(p);
-  if (i < colors[1].length) draw.moves.push(colors[1][i]);
-});
-assert.equal(rules.place(draw, lastWhite).full, true);
-assert.equal(draw.moves.length, 900);
+const lastBlack = colors[0].pop();
+draw.board[lastBlack] = rules.EMPTY;
+colors[1].forEach((p, i) => draw.moves.push(colors[0][i], p));
+assert.equal(rules.place(draw, lastBlack).full, true);
+assert.equal(draw.moves.length, 225);
 assert.equal(draw.winner, 0);
 assert.equal(engine.search(draw.moves, 3).candidates.length, 0);
 
 for (const [coords, expected] of [
-  [[[15,10],[15,11],[15,12],[15,14],[15,15]], rules.FORBIDDEN.OVERLINE],
-  [[[15,14],[15,16],[14,15],[16,15]], rules.FORBIDDEN.DOUBLE_THREE],
-  [[[15,12],[15,13],[15,14],[12,15],[13,15],[14,15]], rules.FORBIDDEN.DOUBLE_FOUR],
-  [[[15,12],[15,13],[15,14]], null]
+  [[[7,2],[7,3],[7,4],[7,6],[7,7]], rules.FORBIDDEN.OVERLINE],
+  [[[7,6],[7,8],[6,7],[8,7]], rules.FORBIDDEN.DOUBLE_THREE],
+  [[[7,4],[7,5],[7,6],[4,7],[5,7],[6,7]], rules.FORBIDDEN.DOUBLE_FOUR],
+  [[[7,4],[7,5],[7,6]], null]
 ]) {
   const board = new Int8Array(rules.AREA);
   for (const p of movesOf(coords)) board[p] = rules.BLACK;
-  const at = expected === rules.FORBIDDEN.OVERLINE ? cell(15,13) : cell(15,15);
+  const at = expected === rules.FORBIDDEN.OVERLINE ? cell(7,5) : cell(7,7);
   const before = board.slice();
   assert.equal(rules.forbiddenReason(board, at), expected);
   assert.deepEqual(board, before);
@@ -109,56 +107,56 @@ for (const [coords, expected] of [
 }
 
 // 跳活三只需一个合法延伸；其延伸若是禁手，则属于假活三。
-const jumped = [[15,14],[15,17],[14,15],[17,15]];
+const jumped = [[7,6],[7,9],[6,7],[9,7]];
 for (const [name, additions, expected] of [
   ['交叉跳活三', [], rules.FORBIDDEN.DOUBLE_THREE],
-  ['长连使一个三无效', [[12,16],[13,16],[14,16],[16,16],[17,16]], null],
-  ['双四使一个三无效', [[13,16],[14,16],[16,16]], null],
-  ['递归双三使一个三无效', [[16,17],[14,17],[13,18]], null]
+  ['长连使一个三无效', [[4,8],[5,8],[6,8],[8,8],[9,8]], null],
+  ['双四使一个三无效', [[5,8],[6,8],[8,8]], null],
+  ['递归双三使一个三无效', [[8,9],[6,9],[5,10]], null]
 ]) {
   const board = new Int8Array(rules.AREA);
   for (const p of movesOf([...jumped, ...additions])) board[p] = rules.BLACK;
   const before = board.slice();
-  assert.equal(rules.forbiddenReason(board, cell(15,15)), expected, name);
+  assert.equal(rules.forbiddenReason(board, cell(7,7)), expected, name);
   assert.deepEqual(board, before, name + ' 不污染棋盘');
 }
 const exact = new Int8Array(rules.AREA);
-for (const p of movesOf([[15,10],[15,11],[15,12],[15,14],[15,15],[11,13],[12,13],[13,13],[14,13]])) exact[p] = rules.BLACK;
-assert.equal(rules.forbiddenReason(exact, cell(15,13)), null, '恰五优先于另一方向长连');
-exact[cell(15,13)] = rules.BLACK;
-assert.equal(rules.checkFive(exact, cell(15,13)).length, 5);
+for (const p of movesOf([[7,2],[7,3],[7,4],[7,6],[7,7],[3,5],[4,5],[5,5],[6,5]])) exact[p] = rules.BLACK;
+assert.equal(rules.forbiddenReason(exact, cell(7,5)), null, '恰五优先于另一方向长连');
+exact[cell(7,5)] = rules.BLACK;
+assert.equal(rules.checkFive(exact, cell(7,5)).length, 5);
 const longWhite = new Int8Array(rules.AREA);
-for (let c = 24; c < 30; c++) longWhite[cell(29,c)] = rules.WHITE;
-assert.equal(rules.checkFive(longWhite, cell(29,29)).length, 6);
-const separateThrees = movesOf([[15,2],[15,1],[15,3],[15,7],[15,4],[15,18],
-  [15,19],[15,24],[15,20],[0,0],[15,21],[0,2]]);
-assert.equal(engine.lineEval(separateThrees, 15, rules.BLACK), 6000, '隔开的两个眠三分别计分');
+for (let c = 9; c < 15; c++) longWhite[cell(14,c)] = rules.WHITE;
+assert.equal(rules.checkFive(longWhite, cell(14,14)).length, 6);
+const separateThrees = movesOf([[7,1],[7,0],[7,2],[7,6],[7,3],[7,7],
+  [7,8],[7,13],[7,9],[0,0],[7,10],[0,2]]);
+assert.equal(engine.lineEval(separateThrees, 7, rules.BLACK), 6000, '隔开的两个眠三分别计分');
 
-const forbiddenWin = 'K15 AD30 L15 AD28 M15 AD26 O15 AD24 P15 AD22'.split(' ').map(rules.indexFromCoord);
+const forbiddenWin = 'C8 O15 D8 O13 E8 O11 G8 O9 H8 O7'.split(' ').map(rules.indexFromCoord);
 const forbiddenGame = rules.createGame();
 for (const p of forbiddenWin) assert.equal(rules.place(forbiddenGame, p).legal, true);
 const corrected = engine.search(forbiddenWin, 6);
 assert.equal(corrected.forced, 'none');
 assert.ok(corrected.candidates.length > 1);
-assert.ok(corrected.candidates.every(c => c.move !== rules.indexFromCoord('N15') &&
+assert.ok(corrected.candidates.every(c => c.move !== rules.indexFromCoord('F8') &&
   rules.forbiddenReason(forbiddenGame.board, c.move) === null));
-assert.notEqual(corrected.candidates[0].move, 0, '不再自动改下 A30');
-const whiteToMove = engine.search([...forbiddenWin, rules.indexFromCoord('Q20')], 6);
+assert.notEqual(corrected.candidates[0].move, 0, '不再自动改下 A15');
+const whiteToMove = engine.search([...forbiddenWin, rules.indexFromCoord('I13')], 6);
 assert.equal(whiteToMove.forced, 'none', '白方不必防守黑方非法成五点');
-const forbiddenBlock = 'K15 N19 L15 N18 M15 N17 O15 N16 P15 AD30 N20 AD28'.split(' ').map(rules.indexFromCoord);
+const forbiddenBlock = 'C8 F12 D8 F11 E8 F10 G8 F9 H8 O15 F13 O13'.split(' ').map(rules.indexFromCoord);
 const lost = engine.search(forbiddenBlock, 6);
 assert.ok(lost.candidates[0].score <= -9000000, '唯一挡点是禁手时，不能把非法防守当作脱险');
-assert.ok(lost.candidates.every(c => c.move !== rules.indexFromCoord('N15')));
+assert.ok(lost.candidates.every(c => c.move !== rules.indexFromCoord('F8')));
 
-const win = movesOf([[28,24],[0,0],[28,25],[0,2],[28,26],[0,4],[28,27],[0,6]]);
-const block = movesOf([[27,24],[27,25],[0,0],[27,26],[0,2],[27,27],[0,4],[27,28]]);
+const win = movesOf([[13,9],[0,0],[13,10],[0,2],[13,11],[0,4],[13,12],[0,6]]);
+const block = movesOf([[12,9],[12,10],[0,0],[12,11],[0,2],[12,12],[0,4],[12,13]]);
 assert.equal(engine.search(win, 3).forced, 'win1');
 const blocked = engine.search(block, 3);
 assert.equal(blocked.forced, 'block1');
-assert.equal(blocked.candidates[0].move, cell(27,29));
+assert.equal(blocked.candidates[0].move, cell(12,14));
 
 // 第二个挡点超时时，不能用它的静态分覆盖第一个挡点的完整搜索分。
-const doubleThreat = movesOf([[0,0],[27,25],[0,2],[27,26],[0,4],[27,27],[0,6],[27,28]]);
+const doubleThreat = movesOf([[0,0],[12,10],[0,2],[12,11],[0,4],[12,12],[0,6],[12,13]]);
 let reads = 0;
 const partialBlock = engineWith({ ...definition, timeMs: 5 }, () => reads++ >= 2 ? 5 : 0);
 const partial = partialBlock.search(doubleThreat, 3);
@@ -180,7 +178,7 @@ for (const moves of [central, spread]) {
 assert.ok(engine.audited() > 0, '普通搜索与 VCF 落子审计必须生效');
 
 // 单调虚拟时钟在递归落两手后耗尽预算，精确覆盖普通搜索/挡点/VCF 的退出恢复。
-const threat = movesOf([[15,14],[15,13],[15,15],[2,3],[15,16],[2,5]]);
+const threat = movesOf([[7,6],[7,5],[7,7],[2,3],[7,8],[2,5]]);
 for (const [moves, vcf] of [[central, false], [block, false], [threat, true]]) {
   let timed, expired = false;
   timed = engineWith({ ...definition, candWidth: 32, timeMs: 5, vcf }, () => {
@@ -204,7 +202,7 @@ for (const [moves, vcf] of [[central, false], [block, false], [threat, true]]) {
   }
 }
 const killer = engineWith({ ...definition, vcf: true });
-const kill = killer.search(movesOf([[15,14],[3,3],[15,15],[4,3],[15,16],[5,4]]), 4);
+const kill = killer.search(movesOf([[7,6],[0,0],[7,7],[1,0],[7,8],[2,1]]), 4);
 assert.ok(kill.candidates[0].score >= 9000000, '短杀可由基础搜索直接证明');
 assert.ok(kill.nodes > 0);
 assert.ok(engine.leaf(win) >= 9000000, '叶子的一步赢必须识别为胜');
@@ -212,7 +210,7 @@ assert.ok(engine.leaf(doubleThreat) <= -9000000, '叶子的双端四必须识别
 assert.ok(Math.abs(engine.leaf(block)) < 9000000, '唯一可挡的冲四不能误判为必败');
 assert.deepEqual(plain(engine.state().moves), block);
 const narrow = engineWith({ ...definition, candWidth: 1, depth: 1, vcf: true });
-const attacks = narrow.search(movesOf([[15,14],[3,3],[15,15],[4,3],[15,16],[5,4]]), 6);
+const attacks = narrow.search(movesOf([[7,6],[0,0],[7,7],[1,0],[7,8],[2,1]]), 6);
 assert.ok(attacks.candidates.length > 1, '真实冲四不受普通候选限额裁切');
 assert.ok(attacks.candidates[0].score >= 9000000);
 
@@ -255,7 +253,7 @@ try {
     assert.equal(message.type, expected);
     if (expected === 'result') {
       assert.ok(Number.isFinite(message.timeMs));
-      assert.notEqual(message.move, rules.indexFromCoord('N15'));
+      assert.notEqual(message.move, rules.indexFromCoord('F8'));
     }
   }
 } finally {
@@ -291,7 +289,7 @@ StubWorker.latest.emit('message', { type: 'result', seq: newSeq, move: rules.CEN
 assert.equal((await current).move, rules.CENTER);
 bridge.unload();
 
-console.log('PASS: 30×30 规则、真假活三、恰五优先、搜索逐手合法性、叶子战术与分段评分、缓存与超时恢复、VCF 子预算、真实模块 Worker 协议、Bridge 路由');
+console.log('PASS: 15×15 规则、宗师 5000ms、真假活三、恰五优先、搜索逐手合法性、叶子战术与分段评分、缓存与超时恢复、VCF 子预算、真实模块 Worker 协议、Bridge 路由');
 
 // 可选真实宗师预算检查：node scripts/check.mjs --bench
 if (process.argv.includes('--bench')) {

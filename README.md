@@ -20,10 +20,10 @@ Web Worker 里，零第三方依赖、零构建、零下载，可直接托管在
   are explicitly marked *sub-optimal*; VCF kills are marked *VCF*.
 - **Three modes** — vs AI (6 levels, play black or white), local 2-player,
   and AI-vs-AI for calibration and spectating.
-- **30×30 board with Renju-style forbidden moves** — Black forbids overlines, double-threes and
+- **15×15 board with Renju-style forbidden moves** — Black forbids overlines, double-threes and
   double-fours; exact five wins for Black, five-or-more wins for White.
-  Full board (900 intersections) = draw. Coordinates run A–AD / 1–30;
-  the opening move is P15, the lower-right of the four central intersections.
+  Full board (225 intersections) = draw. Coordinates run A–O / 1–15;
+  the opening move is H8, the center intersection.
 
 ## Difficulty
 
@@ -34,7 +34,7 @@ Web Worker 里，零第三方依赖、零构建、零下载，可直接托管在
 | 3 | 中级 | 4 | 1 s | off | temp 3000 |
 | 4 | 高级 | 6 | 1.5 s | on | — |
 | 5 | 大师 | 8 | 2.5 s | on | — |
-| 6 | 宗师 | 12 | 4 s | on | — |
+| 6 | 宗师 | 12 | 5 s | on | — |
 
 At every level two hard rules bypass all weakening: if the engine can complete
 five in one move it does; if the opponent threatens five it must block.
@@ -71,7 +71,7 @@ VCF runs after the base search with a budget of `min(400 ms, 20% of remaining
 time)`, then ordinary search continues. Advanced levels extend forcing leaf
 positions by at most four plies after the first two iterations. All work shares
 the move deadline; interrupted searches restore the board and retain the last
-completed depth. Grandmaster keeps its 4-second budget and 32/16 ordinary widths.
+completed depth. Grandmaster uses a 5-second budget and 32/16 ordinary widths.
 See [README_CN.md](README_CN.md#宗师规则与战术修复) for rules, search behavior and checks.
 
 Run the dependency-free regression checks with `node scripts/check.mjs`.

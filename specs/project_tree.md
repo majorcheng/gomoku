@@ -110,6 +110,6 @@
 | 引擎体积 | 5 MB + 49 MB 权重 | 7.0 MB | **~40 KB** | 纯 JS 源码即产物 |
 | 跨源隔离 | 需要 COOP/COEP | 不需要 | **不需要** | 普通 Worker |
 | 规则裁判 | chess.js（第三方） | chess.js（第三方） | **自研 rules.js** | 五子棋规则简单，无现成库必要 |
-| 棋盘渲染 | 自绘 DOM | chessground（第三方） | **自研 Canvas** | 30×30 网格沿用 Canvas |
+| 棋盘渲染 | 自绘 DOM | chessground（第三方） | **自研 Canvas** | 15×15 网格沿用 Canvas |
 | 难度实现 | Worker 内采样 | 主线程 difficulty.js | 主线程 difficulty.js | 引擎自研，原生支持档位参数 |
 | 许可 | GPL-3.0（传染） | GPL-3.0（传染） | **MIT** | 零第三方代码 |

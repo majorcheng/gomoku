@@ -107,8 +107,8 @@
       desc: '六层搜索 + 限时冲四算杀，优先处理强制攻防。' },
     { level: 5, label: '大师', depth: 8, timeMs: 2500, candWidth: 32, vcf: true,  temperature: 0,     blunder: 0,
       desc: '八层搜索 + 战术延伸，时间预算 2.5 秒。' },
-    { level: 6, label: '宗师', depth: 12, timeMs: 4000, candWidth: 32, vcf: true,  temperature: 0,    blunder: 0,
-      desc: '12 层上限 + 战术延伸，时间预算 4 秒。' }
+    { level: 6, label: '宗师', depth: 12, timeMs: 5000, candWidth: 32, vcf: true,  temperature: 0,    blunder: 0,
+      desc: '12 层上限 + 战术延伸，时间预算 5 秒。' }
   ];
 
   var DEFAULT_LEVEL = 3;

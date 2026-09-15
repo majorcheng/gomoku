@@ -5,7 +5,7 @@
  * 落子是否合法由 app.js 问过 rules.js 之后决定要不要采纳。
  *
  * 渲染清单：
- *   - 木色盘面 + 30×30 网格 + 四个对称星位 + 坐标（列 A..AD 底部，行 1..30 左侧）
+ *   - 木色盘面 + 15×15 网格 + 五个星位 + 坐标（列 A..O 底部，行 1..15 左侧）
  *   - 棋子：径向渐变程序化绘制（黑子左上高光 / 白子浅灰描边），无图片资源
  *   - 最后一手：棋子中心红点（颜色 + 形状双重编码）
  *   - 悬停预览：空点上的半透明棋子（仅人回合）
@@ -20,7 +20,7 @@
 import { SIZE, COL_NAMES, EMPTY, BLACK } from '../rules.js';
 
 const STAR_POINTS = [
-  [7, 7], [22, 7], [7, 22], [22, 22]
+  [3, 3], [11, 3], [7, 7], [3, 11], [11, 11]
 ];
 
 /**
@@ -49,7 +49,7 @@ export function createBoard(canvas, handlers) {
     dpr = window.devicePixelRatio || 1;
     canvas.width = Math.max(1, Math.round(cssW * dpr));
     canvas.height = Math.max(1, Math.round(cssH * dpr));
-    // 为双字母列名留边，扩展网格后仍尽量保留落子空间。
+    // 为坐标标注留边。
     const pad = Math.max(20, Math.min(cssW, cssH) * 0.045);
     layout = { pad: pad, cell: (Math.min(cssW, cssH) - pad * 2) / (SIZE - 1) };
     render();
@@ -132,11 +132,11 @@ export function createBoard(canvas, handlers) {
     ctx.font = `600 ${fontSize}px -apple-system, "Segoe UI", Arial, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // 列 A..AD 底部
+    // 列 A..O 底部
     for (let c = 0; c < SIZE; c++) {
       ctx.fillText(COL_NAMES[c], layout.pad + c * layout.cell, cssH - layout.pad / 2);
     }
-    // 行 1..30 左侧（row 0 在最上 = 30）
+    // 行 1..15 左侧（row 0 在最上 = 15）
     for (let r = 0; r < SIZE; r++) {
       ctx.fillText(String(SIZE - r), layout.pad / 2, layout.pad + r * layout.cell);
     }
