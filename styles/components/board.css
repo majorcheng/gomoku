@@ -1,0 +1,68 @@
+/* ── 棋盘舞台：Canvas + 菜单遮罩的共同定位上下文 ───────────────────── */
+
+.board-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--color-board-wood);
+}
+
+.board-stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: manipulation; /* 手机双击缩放别抢点击落子 */
+}
+
+/* 该走子的一方（人类回合）棋盘给手型光标，引擎回合/观战不给 */
+.board-stage.interactive canvas {
+  cursor: pointer;
+}
+
+/* ── 引擎思考中：棋盘变淡且不可交互 ───────────────────────────────── */
+
+.board-stage.thinking canvas {
+  opacity: 0.86;
+  transition: opacity var(--transition-normal);
+}
+
+/* ── 竖向评估条（黑上白下：黑方优势越大，上方黑色越多）────────────── */
+
+.eval-bar {
+  flex: 0 0 var(--eval-bar-width);
+  width: var(--eval-bar-width);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-eval-black);
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  position: relative;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.eval-bar-white {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 50%;
+  background: var(--color-eval-white);
+  transition: height var(--transition-normal);
+}
+
+.eval-bar-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.eval-bar-label.top { top: 3px; color: var(--color-text-light); }
+.eval-bar-label.bottom { bottom: 3px; color: var(--color-text-dark); }

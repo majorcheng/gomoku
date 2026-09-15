@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>五子棋 · Gomoku</title>
+<meta name="description" content="纯前端五子棋：自研迭代加深 α-β + VCF 算杀引擎跑在 Web Worker，六档难度，零第三方依赖，可部署在 GitHub Pages。">
+<!-- 内联 SVG favicon（黑白双石），保持零资源文件原则 -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23d8b57e'/%3E%3Ccircle cx='11' cy='12' r='7' fill='%2317181c'/%3E%3Ccircle cx='21' cy='20' r='7' fill='%23f4f2ec' stroke='%23a89b85' stroke-width='1.5'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── 顶部标题与比分 ─────────────────────────────────────────── -->
+  <div class="content-title">
+    <div id="black-counter" class="title-counter black-counter" title="黑方胜局">0</div>
+    <h1 class="title">五 子 棋</h1>
+    <div id="white-counter" class="title-counter white-counter" title="白方胜局">0</div>
+  </div>
+
+  <div class="game-layout">
+
+    <!-- ── 棋盘区 ──────────────────────────────────────────────── -->
+    <div class="border-frame">
+      <div class="board-column">
+        <div class="board-frame">
+          <div id="board-stage" class="board-stage">
+            <canvas id="board" role="img" aria-label="五子棋棋盘"></canvas>
+
+            <!-- 多级菜单遮罩 -->
+            <div id="board-options" class="board-options">
+
+              <div id="menu-main" class="menu-page">
+                <h3>五子棋</h3>
+                <p>引擎跑在浏览器本地，零依赖零下载。六档难度，从入门到宗师。</p>
+                <button id="startbtn" class="btn btn-primary">开始对局</button>
+                <button id="helpbtn" class="btn">说明</button>
+              </div>
+
+              <div id="menu-mode" class="menu-page hide">
+                <h3>选择模式</h3>
+                <button id="pvebtn" class="btn btn-primary">人机对战</button>
+                <button id="pvpbtn" class="btn">本机双人</button>
+                <button id="evebtn" class="btn">机机对战</button>
+                <button class="menu-return returnbtn" data-back="main">‹ 返回</button>
+              </div>
+
+              <div id="menu-color" class="menu-page hide">
+                <h3>选择执子</h3>
+                <button id="pfbtn" class="btn btn-primary">我执黑（先行）</button>
+                <button id="efbtn" class="btn">我执白（后行）</button>
+                <button class="menu-return returnbtn" data-back="mode">‹ 返回</button>
+              </div>
+
+              <div id="menu-level" class="menu-page hide">
+                <h3>选择难度</h3>
+                <!-- 档位按钮由 js/ui/menu.js 从 Difficulty.LEVELS 生成，不硬编码文案 -->
+                <div id="level-picker" class="level-picker"></div>
+                <div id="level-desc" class="level-desc"></div>
+                <button id="levelstart" class="btn btn-primary">开始对局</button>
+                <button class="menu-return returnbtn" data-back="color">‹ 返回</button>
+              </div>
+
+              <div id="menu-help" class="menu-page hide">
+                <h3>说明</h3>
+                <p>
+                  点击交叉点落子，悬停会显示预览棋子。<br>
+                  连珠规则：黑方禁长连、双三、双四；黑方恰好五连或白方五连（含长连）即胜，落满 225 点为和棋。<br>
+                  黑先行；人机模式可选执黑或执白。<br>
+                  侧栏如实记录引擎每手的搜索深度、节点数、NPS 与评估分；
+                  低难度下若走了非引擎首选的落子，会明确标注「次优」，
+                  算杀落子标注「VCF」。
+                </p>
+                <button class="menu-return returnbtn" data-back="main">‹ 返回</button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 竖向评估条（黑上白下） -->
+      <div class="eval-bar" id="eval-bar" title="引擎评估（黑方优势向上）">
+        <div class="eval-bar-white" id="eval-bar-white"></div>
+        <span class="eval-bar-label top" id="eval-label-top"></span>
+        <span class="eval-bar-label bottom" id="eval-label-bottom"></span>
+      </div>
+    </div>
+
+    <!-- ── 侧边栏 ──────────────────────────────────────────────── -->
+    <aside class="side-panel">
+
+      <div class="panel-card">
+        <h2>对局信息</h2>
+        <dl class="info-grid">
+          <dt>模式</dt>
+          <dd id="info-mode">—</dd>
+          <dt>难度</dt>
+          <dd id="info-level">—</dd>
+          <dt>当前</dt>
+          <dd id="info-turn">—</dd>
+          <dt>最近落子</dt>
+          <dd id="info-last">—</dd>
+          <dt>手数</dt>
+          <dd id="info-count">—</dd>
+        </dl>
+        <div class="controls">
+          <button id="undobtn" class="btn">悔棋</button>
+          <button id="restartbtn2" class="btn">重开</button>
+          <button id="menubtn" class="btn btn-ghost">菜单</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h2>AI 搜索评分</h2>
+        <p class="panel-sub">记录每一手的搜索深度、节点数、耗时、NPS 和评估分。数据全部来自引擎的真实搜索输出，未做任何编造。</p>
+        <div class="table-scroll">
+          <table class="stats-table" id="ai-stats-table">
+            <thead>
+              <tr>
+                <th>#</th><th>方</th><th>来源</th><th>落子</th>
+                <th>深度</th><th>节点</th><th>NPS</th><th>耗时</th><th>分数</th>
+              </tr>
+            </thead>
+            <tbody id="ai-stats-body"></tbody>
+          </table>
+          <div class="stats-empty" id="stats-empty">还没有落子。</div>
+        </div>
+        <div class="current-status" id="ai-current">引擎尚未加载。</div>
+      </div>
+
+      <div class="panel-card">
+        <h2>引擎</h2>
+        <div class="engine-facts" id="engine-facts">尚未加载。</div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- ── 底部说明 ────────────────────────────────────────────────── -->
+  <div class="engine-note">
+    <h3>关于这个项目</h3>
+    <ul>
+      <li>在线试玩：<a href="https://justa-cai.github.io/gomoku/" target="_blank" rel="noopener">justa-cai.github.io/gomoku</a><br>
+          源码仓库：<a href="https://github.com/justa-cai/gomoku" target="_blank" rel="noopener">github.com/justa-cai/gomoku</a></li>
+      <li>五子棋（15×15，连珠规则）：黑方禁长连、双三、双四；黑方恰好五连或白方五连（含长连）即胜。</li>
+      <li>引擎<strong>完全自研</strong>，无任何第三方棋力库：迭代加深 Negamax α-β +
+          Zobrist 置换表 + 杀手/历史启发 + <strong>VCF 连续冲四算杀</strong>，
+          跑在 Web Worker 里，主线程零卡顿。</li>
+      <li><strong>零依赖、零下载</strong>：无构建步骤、无 CDN、无 wasm、无图片字体资源，
+          全部代码随仓库分发，可直接托管在 GitHub Pages。</li>
+      <li>难度两级旋钮：搜索弱化（深度/时限/候选宽度/VCF 开关）+ 根节点采样
+          （温度 + 失误率）。任何档位都保留硬底线——己方能成五必走、对方成五必挡。</li>
+      <li>许可为 MIT（全自研）。算法背景与调研记录见仓库的 <code>README_CN.md</code>。</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ── 对局总结浮层 ──────────────────────────────────────────────── -->
+<div id="game-summary" class="game-summary hide">
+  <div class="game-summary-card">
+    <h2 id="game-summary-title">对局结束</h2>
+    <div class="summary-detail" id="game-summary-text"></div>
+    <div class="controls">
+      <button id="summary-restart" class="btn btn-primary">再来一局</button>
+      <button id="summary-close" class="btn btn-ghost">看看棋盘</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hide"></div>
+
+<!-- 经典脚本：暴露全局对象（Difficulty / Bridge），引擎 Worker 由 Bridge 创建 -->
+<script src="js/difficulty.js"></script>
+<script src="js/engines/bridge.js"></script>
+<!-- 应用本体是 ES 模块（视图层全部 ESM），在上面的经典脚本之后执行 -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>

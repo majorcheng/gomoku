@@ -1,0 +1,149 @@
+/* ── 侧边面板 ─────────────────────────────────────────────────────── */
+
+.side-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel-card {
+  background: var(--color-panel-bg);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--color-panel-shadow);
+  padding: 14px 16px;
+}
+
+.panel-card h2 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.panel-card p.panel-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+/* ── 对局信息（模式 / 难度 / 行棋方 / 最近落子 / 手数）─────────────── */
+
+.info-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 12.5px;
+}
+
+.info-grid dt {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.info-grid dd {
+  color: var(--color-text-main);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── 搜索数据表格 ─────────────────────────────────────────────────── */
+
+.table-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  /* 表格单元格是 nowrap，侧栏再窄也只会横向滚动，不会把内容切掉 */
+  overflow-x: auto;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-panel-bg);
+  border-bottom: 1px solid var(--color-panel-border);
+  padding: 5px 4px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.stats-table thead th:first-child,
+.stats-table tbody td:first-child { text-align: left; }
+
+.stats-table tbody td {
+  padding: 4px;
+  text-align: right;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
+}
+
+.stats-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.stats-table tbody tr.suboptimal td.mv {
+  color: var(--color-score-negative);
+  cursor: help;
+}
+
+.stats-table tbody td.src-vcf {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.source-human { color: var(--color-source-human); }
+.source-ai { color: var(--color-source-ai); }
+
+.score-positive { color: var(--color-score-positive); }
+.score-negative { color: var(--color-score-negative); }
+.score-neutral { color: var(--color-score-neutral); }
+
+.stats-empty {
+  padding: 14px 4px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ── 底部实时状态栏（迭代加深进度 / 就绪状态）────────────────────── */
+
+.current-status {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-btn);
+  background: rgba(120, 199, 255, 0.09);
+  border: 1px solid rgba(120, 199, 255, 0.16);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  min-height: 34px;
+  line-height: 1.5;
+}
+
+.current-status.busy {
+  color: var(--color-score-positive);
+}
+
+/* ── 引擎参数卡（如实展示当前档位的搜索参数）──────────────────────── */
+
+.engine-facts {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.engine-facts .ok { color: var(--color-accent); }
+.engine-facts .miss { color: var(--color-score-negative); }

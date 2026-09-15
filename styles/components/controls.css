@@ -1,0 +1,102 @@
+/* ── 按钮组 ───────────────────────────────────────────────────────── */
+
+.controls {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn {
+  flex: 1 1 auto;
+  min-width: 96px;
+  padding: 9px 14px;
+  border-radius: var(--radius-btn);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-text-main);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  border-color: transparent;
+  color: #06240f;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2ec26d;
+}
+
+.btn-ghost {
+  background: transparent;
+}
+
+/* ── 难度选择 ─────────────────────────────────────────────────────── */
+
+.level-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.level-btn {
+  padding: 7px 13px;
+  border-radius: var(--radius-btn);
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background var(--transition-fast);
+}
+
+.level-btn:hover {
+  background: rgba(255, 255, 255, 0.17);
+}
+
+.level-btn.active {
+  background: var(--color-accent);
+  border-color: transparent;
+  color: #06240f;
+}
+
+.level-desc {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  min-height: 30px;
+}
+
+/* ── 对局结果徽标 ─────────────────────────────────────────────────── */
+
+.result-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.result-badge.white-win { background: rgba(255, 255, 255, 0.88); color: #222; }
+.result-badge.black-win { background: rgba(0, 0, 0, 0.6); color: #fff; }
+.result-badge.draw { background: rgba(174, 181, 194, 0.28); color: var(--color-text-main); }

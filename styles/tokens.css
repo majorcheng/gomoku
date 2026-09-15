@@ -1,0 +1,51 @@
+:root {
+  /* 颜色 Token（沿用系列深色科技风 + 五子棋木色棋盘） */
+  --color-bg-primary: #727272;
+  --color-panel-bg: #20242b;
+  --color-panel-border: rgba(255, 255, 255, 0.08);
+  --color-panel-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+
+  --color-text-main: #e8eaef;
+  --color-text-muted: #aeb5c2;
+  --color-text-dark: #333333;
+  --color-text-light: #ffffff;
+
+  --color-score-positive: #78c7ff;
+  --color-score-negative: #ffd36b;
+  --color-score-neutral: #e8eaef;
+
+  --color-source-ai: #78c7ff;
+  --color-source-human: #f4d06f;
+
+  --color-brand: #8c2d19;
+  --color-accent: #27ae60;
+
+  /* 棋盘 token：外框深木色，盘面浅木色，网格线深棕 */
+  --color-board-frame: #4a3728;
+  --color-board-wood: #d8b57e;
+  --color-board-wood-dark: #c9a468;
+  --color-board-line: #6b4a2b;
+  --color-stone-black: #17181c;
+  --color-stone-white: #f4f2ec;
+  --color-win-line: #e74c3c;
+
+  --color-eval-black: #2b2b2b;
+  --color-eval-white: #f2f2f2;
+
+  /* 尺寸 Token —— 五子棋棋盘同样是正方形，四周留坐标标注位。
+     棋盘实际边长 = --board-size - --board-pad*2 - --eval-bar-width - --eval-bar-gap */
+  --board-size: clamp(360px, min(56vw, 76vh), 1080px);
+  --board-pad: calc(var(--board-size) / 32);
+  --panel-width: clamp(480px, 26vw, 620px);
+  --eval-bar-width: 16px;
+  --eval-bar-gap: 10px;
+
+  /* 阴影与圆角 Token */
+  --radius-card: 12px;
+  --radius-btn: 6px;
+  --radius-badge: 50%;
+
+  /* 动画 Token */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

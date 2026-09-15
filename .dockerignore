@@ -1,0 +1,11 @@
+.git
+.github
+.gitignore
+.DS_Store
+__pycache__
+*.pyc
+README*
+NOTICE.md
+LICENSE
+server.py
+specs

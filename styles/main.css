@@ -1,0 +1,8 @@
+/* 统一入口：变量 → 重置 → 组件样式，顺序不可颠倒 */
+@import url("tokens.css");
+@import url("base.css");
+@import url("components/layout.css");
+@import url("components/board.css");
+@import url("components/panel.css");
+@import url("components/controls.css");
+@import url("components/modal.css");
