@@ -67,7 +67,7 @@
                 <h3>说明</h3>
                 <p>
                   点击交叉点落子，悬停会显示预览棋子。<br>
-                  连珠规则：黑方禁长连、双三、双四；黑方恰好五连或白方五连（含长连）即胜，落满 225 点为和棋。<br>
+                  30×30 棋盘，列 A–AD、行 1–30。黑方恰好五连优先判胜，否则长连、双三、双四为禁手；白方五连（含长连）即胜，落满 900 点为和棋。<br>
                   黑先行；人机模式可选执黑或执白。<br>
                   侧栏如实记录引擎每手的搜索深度、节点数、NPS 与评估分；
                   低难度下若走了非引擎首选的落子，会明确标注「次优」，
@@ -137,24 +137,6 @@
       </div>
 
     </aside>
-  </div>
-
-  <!-- ── 底部说明 ────────────────────────────────────────────────── -->
-  <div class="engine-note">
-    <h3>关于这个项目</h3>
-    <ul>
-      <li>在线试玩：<a href="https://justa-cai.github.io/gomoku/" target="_blank" rel="noopener">justa-cai.github.io/gomoku</a><br>
-          源码仓库：<a href="https://github.com/justa-cai/gomoku" target="_blank" rel="noopener">github.com/justa-cai/gomoku</a></li>
-      <li>五子棋（15×15，连珠规则）：黑方禁长连、双三、双四；黑方恰好五连或白方五连（含长连）即胜。</li>
-      <li>引擎<strong>完全自研</strong>，无任何第三方棋力库：迭代加深 Negamax α-β +
-          Zobrist 置换表 + 杀手/历史启发 + <strong>VCF 连续冲四算杀</strong>，
-          跑在 Web Worker 里，主线程零卡顿。</li>
-      <li><strong>零依赖、零下载</strong>：无构建步骤、无 CDN、无 wasm、无图片字体资源，
-          全部代码随仓库分发，可直接托管在 GitHub Pages。</li>
-      <li>难度两级旋钮：搜索弱化（深度/时限/候选宽度/VCF 开关）+ 根节点采样
-          （温度 + 失误率）。任何档位都保留硬底线——己方能成五必走、对方成五必挡。</li>
-      <li>许可为 MIT（全自研）。算法背景与调研记录见仓库的 <code>README_CN.md</code>。</li>
-    </ul>
   </div>
 
 </div>

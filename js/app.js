@@ -122,7 +122,7 @@ function finishGame(result) {
   } else {
     menu.showSummary({
       title: '和棋',
-      text: '225 个交叉点全部落满，未分出胜负。'
+      text: `${rules.AREA} 个交叉点全部落满，未分出胜负。`
     });
   }
   panel.setCurrent(
@@ -181,19 +181,18 @@ function aiMove() {
     }
     state.thinking = false;
 
-    // 引擎的评估仍沿用原有棋型搜索，最终选点必须经过裁判层过滤黑方禁手。
-    const candidates = (result.candidates || []).filter((candidate) =>
+    // 与 Worker 共用裁判，非法搜索结果作为引擎错误报告。
+    const candidates = result.candidates || [];
+    const valid = candidates.every((candidate) =>
       Number.isInteger(candidate.move) &&
+      Number.isFinite(candidate.score) &&
       game.board[candidate.move] === rules.EMPTY &&
       !rules.forbiddenReason(game.board, candidate.move, mover)
     );
-    if (!candidates.length) {
-      for (let move = 0; move < rules.AREA; move++) {
-        if (game.board[move] === rules.EMPTY && !rules.forbiddenReason(game.board, move, mover)) {
-          candidates.push({ move, score: 0 });
-          break;
-        }
-      }
+    if (!valid || !candidates.length) {
+      panel.setCurrent(valid ? '引擎未找到合法着法。' : '引擎错误：返回了非法落子或评分。');
+      refresh(false);
+      return;
     }
 
     // 选点：硬规则触发（win1/block1）或 VCF 算杀时只有一个候选、

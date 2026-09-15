@@ -1,19 +1,18 @@
 /**
- * rules.js - 裁判层（主线程的规则权威）
+ * rules.js - 主线程与 module Worker 共用的裁判
  *
  * 只管"棋盘上发生了什么"：落子是否合法、是否触发禁手、是否形成五连、是否满盘、
  * 悔棋退几步、坐标怎么念。不做任何 AI 判断，也不碰 DOM。
  *
- * 棋盘表示：15×15 一维数组，index = row * 15 + col。
+ * 棋盘表示：30×30 一维数组，index = row * SIZE + col。
  *   0 = 空，1 = 黑，2 = 白。黑先行。
- * 坐标记法：列 A..O（左→右，col 0..14），行 1..15（下→上，row 0 = 第 15 行
- * 靠上……不，这里取 row 0 在**上**、行号 15 在下，与棋谱习惯一致：
- * 天元是 col 7 / row 7 → index 112 → "H8"。
+ * 坐标记法：列 A..AD（左→右），行 1..30（下→上，row 0 在最上面）。
+ * 偶数边长没有唯一中心，默认开局取中央四点的右下点 P15（index 465）。
  *
  * @license MIT
  */
 
-export const SIZE = 15;
+export const SIZE = 30;
 export const AREA = SIZE * SIZE;
 export const EMPTY = 0;
 export const BLACK = 1;
@@ -33,15 +32,15 @@ const DIRS = [
   [1, -1]
 ];
 
-/** 天元（棋盘正中） */
-export const CENTER = 7 * SIZE + 7;
+/** 默认开局点：中央四点的右下点 */
+export const CENTER = Math.floor(SIZE / 2) * SIZE + Math.floor(SIZE / 2);
 
-/** 列名 A..O */
-const COL_NAMES = 'ABCDEFGHIJKLMNO';
+/** 列名 A..Z、AA..AD，坐标与视图共用 */
+export const COL_NAMES = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').concat(['AA', 'AB', 'AC', 'AD']);
 
 /**
- * 下标 ↔ 坐标名互转。index 112 ↔ "H8"。
- * 行号显示为 15 - row：row 0（最上面一行）是第 15 行。
+ * 下标 ↔ 坐标名互转。index 465 ↔ "P15"。
+ * 行号显示为 SIZE - row：row 0（最上面一行）是第 30 行。
  */
 export function coordName(index) {
   const col = index % SIZE;
@@ -50,9 +49,11 @@ export function coordName(index) {
 }
 
 export function indexFromCoord(name) {
-  if (!/^[A-O](?:[1-9]|1[0-5])$/.test(name)) return -1;
-  const col = COL_NAMES.indexOf(name[0]);
-  const rowNum = parseInt(name.slice(1), 10);
+  const match = /^([A-Z]{1,2})([1-9]\d?)$/.exec(name);
+  if (!match) return -1;
+  const col = COL_NAMES.indexOf(match[1]);
+  const rowNum = Number(match[2]);
+  if (col < 0 || rowNum > SIZE) return -1;
   return (SIZE - rowNum) * SIZE + col;
 }
 
@@ -72,16 +73,12 @@ function lineAt(board, index, color, dc, dr) {
 
 function lineIndices(index, dc, dr) {
   const result = [];
-  let col = index % SIZE;
-  let row = Math.floor(index / SIZE);
-  while (inBounds(col - dc, row - dr)) {
-    col -= dc;
-    row -= dr;
-  }
-  while (inBounds(col, row)) {
-    result.push(row * SIZE + col);
-    col += dc;
-    row += dr;
+  const col = index % SIZE;
+  const row = Math.floor(index / SIZE);
+  // 能参与包含原点的五连的补点，距原点最多四格。
+  for (let step = -4; step <= 4; step++) {
+    const c = col + step * dc, r = row + step * dr;
+    if (inBounds(c, r)) result.push(r * SIZE + c);
   }
   return result;
 }
@@ -104,8 +101,11 @@ function winningLine(board, index, color, dc, dr) {
 }
 
 function collectFourGroups(board, origin, color, dc, dr, required = -1) {
+  const indices = lineIndices(origin, dc, dr);
+  // 包含原点的五格窗口至少已有四子才可能补成五。
+  if (indices.filter((cell) => board[cell] === color).length < 4) return [];
   const threats = [];
-  for (const completion of lineIndices(origin, dc, dr)) {
+  for (const completion of indices) {
     if (board[completion] !== EMPTY) continue;
     board[completion] = color;
     const line = winningLine(board, completion, color, dc, dr);
@@ -134,36 +134,42 @@ function collectFourThreats(board, origin, color, dc, dr, required = -1) {
 }
 
 function createsOpenThree(board, origin, color, dc, dr) {
-  // ponytail: 采用一步形成活四的识别，赛事级递归判例需升级为标准棋型表/裁判器。
-  let extensions = 0;
-  for (const extension of lineIndices(origin, dc, dr)) {
+  const indices = lineIndices(origin, dc, dr);
+  if (indices.filter((cell) => board[cell] === color).length < 3) return false;
+  for (const extension of indices) {
     if (board[extension] !== EMPTY) continue;
     board[extension] = color;
-    const immediateWin = lineAt(board, extension, color, dc, dr) >= 5;
-    const makesFour = !immediateWin && collectFourGroups(board, origin, color, dc, dr, extension)
-      .some((group) => group.length >= 2);
-    board[extension] = EMPTY;
-    if (makesFour && ++extensions >= 2) return true;
+    try {
+      // RIF 3 / 9.3：一个合法延伸即可（包含跳三）；成五或禁手延伸不算活三。
+      if (DIRS.some(([xc, xr]) => lineAt(board, extension, color, xc, xr) >= 5)) continue;
+      if (collectFourGroups(board, origin, color, dc, dr, extension).some((group) => group.length >= 2) &&
+          !forbiddenReasonAfterPlace(board, extension)) return true;
+    } finally {
+      board[extension] = EMPTY;
+    }
   }
   return false;
 }
 
 function forbiddenReasonAfterPlace(board, index) {
+  let overline = false;
   for (const [dc, dr] of DIRS) {
-    if (lineAt(board, index, BLACK, dc, dr) > 5) return FORBIDDEN.OVERLINE;
+    const count = lineAt(board, index, BLACK, dc, dr);
+    // RIF 9.1 / 9.2：同时形成恰五时获胜，优先于其它方向的禁手。
+    if (count === 5) return null;
+    if (count > 5) overline = true;
   }
-
-  // 恰好五连优先于三三/四四；长连已经在上面作为禁手拦截。
-  if (DIRS.some(([dc, dr]) => lineAt(board, index, BLACK, dc, dr) === 5)) return null;
+  if (overline) return FORBIDDEN.OVERLINE;
 
   let fours = 0;
-  let threes = 0;
   for (const [dc, dr] of DIRS) {
     fours += collectFourThreats(board, index, BLACK, dc, dr);
-    if (createsOpenThree(board, index, BLACK, dc, dr)) threes++;
+    if (fours >= 2) return FORBIDDEN.DOUBLE_FOUR;
   }
-  if (fours >= 2) return FORBIDDEN.DOUBLE_FOUR;
-  if (threes >= 2) return FORBIDDEN.DOUBLE_THREE;
+  let threes = 0;
+  for (const [dc, dr] of DIRS) {
+    if (createsOpenThree(board, index, BLACK, dc, dr) && ++threes >= 2) return FORBIDDEN.DOUBLE_THREE;
+  }
   return null;
 }
 
@@ -174,9 +180,11 @@ function forbiddenReasonAfterPlace(board, index) {
 export function forbiddenReason(board, index, color = BLACK) {
   if (color !== BLACK || !Number.isInteger(index) || index < 0 || index >= AREA || board[index] !== EMPTY) return null;
   board[index] = BLACK;
-  const reason = forbiddenReasonAfterPlace(board, index);
-  board[index] = EMPTY;
-  return reason;
+  try {
+    return forbiddenReasonAfterPlace(board, index);
+  } finally {
+    board[index] = EMPTY;
+  }
 }
 
 export function forbiddenName(reason) {
@@ -186,10 +194,10 @@ export function forbiddenName(reason) {
 }
 
 /**
- * 从"刚落的子"出发，检查是否形成五连或长连。
+ * 从"刚落的子"出发，检查黑方恰五或白方五连及以上。
  *
  * 只需要从落点向四个方向数——之前没赢现在才可能刚赢，这是五子棋
- * 判胜的经典优化，O(4×9) 而非全盘扫描。
+ * 判胜的局部检查，最多扫描经过落点的四条线。
  *
  * @returns {Array<number>|null} 获胜的整条连线（按顺序的下标数组），未胜返回 null
  */
@@ -210,7 +218,7 @@ export function checkFive(board, index) {
     for (let c = col0 - dc, r = row0 - dr; inBounds(c, r) && board[r * SIZE + c] === color; c -= dc, r -= dr) {
       line.unshift(r * SIZE + c);
     }
-    if (line.length >= 5) return line;
+    if (color === BLACK ? line.length === 5 : line.length >= 5) return line;
   }
   return null;
 }
@@ -221,7 +229,7 @@ export function checkFive(board, index) {
  */
 export function createGame() {
   return {
-    board: new Int8Array(AREA),   // Int8Array(225)
+    board: new Int8Array(AREA),
     moves: [],                    // 已落子的下标序列，长度即手数
     over: false,                  // 终局标记
     winner: 0,                    // 0 = 未定/和棋，1 = 黑，2 = 白

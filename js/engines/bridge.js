@@ -18,7 +18,7 @@
  *
  * ── 为什么不让 Worker 里 stop ────────────────────────────────────────
  *
- * 引擎的搜索受时间上限硬约束（档位 timeMs，安全网最多一次迭代的开销超出），
+ * 引擎按档位 timeMs 在搜索检查点结束，检查间隔可能带来少量超时。
  * 悔棋后旧搜索最多再跑几秒就自己结束，不值得为 stop 协议增加
  * 「检查点安全退出」的复杂度——那是 C++ 引擎的做法，JS 里重建 Worker
  * （unload + load）反而更贵。丢弃过期结果是最简单且正确的策略。
@@ -42,7 +42,7 @@
 
     loading = new Promise(function (resolve, reject) {
       try {
-        worker = new Worker('js/engines/engine.worker.js');
+        worker = new Worker('js/engines/engine.worker.js', { type: 'module' });
       } catch (err) {
         loading = null;
         reject(err);
@@ -75,6 +75,7 @@
       worker.addEventListener('error', function (ev) {
         ready = false;
         loading = null;
+        reject(new Error(ev.message || 'engine worker failed to load'));
         if (pending) { pending.resolve(null); pending = null; }
         ev.preventDefault && ev.preventDefault();
       });

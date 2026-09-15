@@ -14,15 +14,16 @@ Web Worker 里，零第三方依赖、零构建、零下载，可直接托管在
   third-party library, no WASM binary.
 - **Zero dependencies** — no build step, no CDN, no image/font assets.
   Stones are drawn procedurally with Canvas radial gradients. The whole app
-  is plain source files (< 100 KB).
+  loads plain source files directly from the repository.
 - **Honest stats** — the side panel shows the real search depth / nodes / NPS /
   time / score of every move. Sub-optimal moves taken by low difficulty levels
   are explicitly marked *sub-optimal*; VCF kills are marked *VCF*.
 - **Three modes** — vs AI (6 levels, play black or white), local 2-player,
   and AI-vs-AI for calibration and spectating.
-- **Renju rules** — 15×15, Black forbids overlines, double-threes and
+- **30×30 board with Renju-style forbidden moves** — Black forbids overlines, double-threes and
   double-fours; exact five wins for Black, five-or-more wins for White.
-  Full board = draw.
+  Full board (900 intersections) = draw. Coordinates run A–AD / 1–30;
+  the opening move is P15, the lower-right of the four central intersections.
 
 ## Difficulty
 
@@ -56,7 +57,24 @@ Scores are pattern-table based (FIVE 10M / open-four 1M / four 100k /
 open-three 90k / …) computed with a sliding 5-cell window model that handles
 jump shapes (X_XXX) naturally; the "distinct completion points" rule
 distinguishes open fours from simple fours. Leaf evaluation is O(1) via
-incrementally maintained per-line pattern sums.
+incrementally maintained per-line pattern sums. Opponent stones split a line
+into independently scored segments, so separate closed threes are not merged
+into a false open three.
+
+Point scores are cached and invalidated only within four intersections in the
+four line directions after a move or undo. Candidate sorting keeps only the
+top K ordinary entries, while advanced levels retain real forcing fours.
+The module Worker imports the same referee as the UI, including recursive
+false-three checks. Invalid engine results are reported as errors.
+
+VCF runs after the base search with a budget of `min(400 ms, 20% of remaining
+time)`, then ordinary search continues. Advanced levels extend forcing leaf
+positions by at most four plies after the first two iterations. All work shares
+the move deadline; interrupted searches restore the board and retain the last
+completed depth. Grandmaster keeps its 4-second budget and 32/16 ordinary widths.
+See [README_CN.md](README_CN.md#宗师规则与战术修复) for rules, search behavior and checks.
+
+Run the dependency-free regression checks with `node scripts/check.mjs`.
 
 ## Run locally
 

@@ -33,6 +33,8 @@
 │   ├── ui.md                   # UI 界面与交互设计规范
 │   └── project_tree.md         # 本文件
 ├── server.py                   # 本地静态开发服务器
+├── scripts/check.mjs           # Node 标准库回归与可选基准对照
+├── scripts/match.mjs           # 同规则同预算、固定开局换先对弈
 ├── .nojekyll                   # GitHub Pages：禁用 Jekyll
 ├── LICENSE                     # MIT 全文（全自研，无第三方代码）
 ├── NOTICE.md                   # 自研声明与算法文献出处
@@ -46,10 +48,9 @@
 |---|---|---|---|
 | `js/vendor/` | chess.js / chessground 等第三方产物 | **无** | 零第三方依赖，规则与棋盘全部自研 |
 | `js/engines/stockfish/` | 7 MB 引擎产物 | **无** | 引擎是自研 JS，就是 `engine.worker.js` |
-| `data/` | ECO 开局库等 | **无** | 五子棋无开局库需求（天元起手即最优） |
-| `scripts/` | 数据编译脚本 | **无** | 无数据需要编译 |
+| `data/` | ECO 开局库等 | **无** | 当前直接使用默认中央开局点 |
 | `third-party/` | 源码级第三方资料 | **无** | 无第三方 |
-| `test/` | — | **无** | 本项目不建测试文件（用户规约） |
+| `test/` | — | **无** | 聚焦回归统一运行 `node scripts/check.mjs`，无测试框架 |
 
 ---
 
@@ -76,12 +77,12 @@
 * `undo(game, n)` → 撤回 n 步（悔棋）；
 * `coordName(index)` / `indexFromCoord(name)` → `H8` 风格坐标互转；
 * `checkFive(board, index)` → 从刚落的子出发向 4 个方向数连子，
-  返回获胜线（含长连）或 `null`。
+  返回获胜线（黑方恰五、白方含长连）或 `null`。
 
 ### 2.3 难度层 (`js/difficulty.js`)
 
 六档参数与采样算法的**唯一出处**，经典脚本暴露全局 `Difficulty`
-（主线程与 Worker 都能加载，Worker 里用 `importScripts`）。
+（主线程用 script，module Worker 用 import）。
 
 * 档位定义见 [prd.md](prd.md) §5；
 * 采样入口 `pickMove(candidates, level)`：带损失上限，候选必败或分差
@@ -89,8 +90,8 @@
 
 ### 2.4 引擎层 (`js/engines/engine.worker.js` + `bridge.js`)
 
-* `engine.worker.js`：自研引擎本体，纯消息协议（`search` / `info` /
-  `result`），不依赖 DOM。头部注释包含算法说明与实测校准数据。
+* `engine.worker.js`：自研模块 Worker，导入共享裁判，采用消息协议（`search` / `info` /
+  `result`），不依赖 DOM，同时默认导出 Node 验证入口。
 * `bridge.js`：主线程门面，`load()` / `search(moves, level)` /
   `cancel()` / `unload()`，内部维护 `seq` 配对，丢弃过期应答，
   并把 `info` 流回调给侧栏。
@@ -109,6 +110,6 @@
 | 引擎体积 | 5 MB + 49 MB 权重 | 7.0 MB | **~40 KB** | 纯 JS 源码即产物 |
 | 跨源隔离 | 需要 COOP/COEP | 不需要 | **不需要** | 普通 Worker |
 | 规则裁判 | chess.js（第三方） | chess.js（第三方） | **自研 rules.js** | 五子棋规则简单，无现成库必要 |
-| 棋盘渲染 | 自绘 DOM | chessground（第三方） | **自研 Canvas** | 15×15 网格 Canvas 最自然 |
+| 棋盘渲染 | 自绘 DOM | chessground（第三方） | **自研 Canvas** | 30×30 网格沿用 Canvas |
 | 难度实现 | Worker 内采样 | 主线程 difficulty.js | 主线程 difficulty.js | 引擎自研，原生支持档位参数 |
 | 许可 | GPL-3.0（传染） | GPL-3.0（传染） | **MIT** | 零第三方代码 |

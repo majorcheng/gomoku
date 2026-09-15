@@ -157,8 +157,9 @@ export function setEngineFacts(level) {
     `档位：<span class="ok">Lv.${def.level} ${def.label}</span><br>` +
     `深度上限：${def.depth > 0 ? def.depth + ' 层' : '不限（按时间）'} · ` +
     `时间上限：${def.timeMs}ms<br>` +
-    `候选宽度：${def.candWidth}（深层 ${Math.max(8, def.candWidth >> 1)}） · ` +
+    `普通候选：${def.candWidth}（深层 ${Math.max(8, def.candWidth >> 1)}） · ` +
     `VCF 算杀：${def.vcf ? '<span class="ok">开</span>' : '关'}<br>` +
+    `强制变化延伸：${def.vcf ? '开，保留必要攻防着法' : '关'}<br>` +
     `采样温度：${def.temperature > 0 ? def.temperature : '无（永远首选）'} · ` +
     `失误率：${def.blunder > 0 ? Math.round(def.blunder * 100) + '%' : '无'}`;
 }

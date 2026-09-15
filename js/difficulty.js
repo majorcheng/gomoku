@@ -3,7 +3,7 @@
  *
  * 这个文件只描述"什么档位用什么参数"，以及"拿到引擎候选落子后怎么挑一步"。
  * 它不碰 DOM、不碰 Worker 消息，只暴露一个全局对象 Difficulty。
- * 主线程用 <script> 加载；引擎 Worker 用 importScripts 加载——两边读同一份定义，
+ * 主线程用 <script> 加载；模块 Worker 用 import 加载——两边读同一份定义，
  * 杜绝"同一条难度规则散落在多个文件"。
  *
  * ── 与 02/03 的差异 ───────────────────────────────────────────────────
@@ -13,7 +13,7 @@
  *
  *   1) 搜索弱化（"能看多远"）：
  *      depth      - 迭代加深的深度上限（0 表示只受时间限制）
- *      timeMs     - 搜索时间硬上限（安全网，任何档位都不会超过它）
+ *      timeMs     - 整手搜索预算（检查点之间可能有少量超时）
  *      candWidth  - 每层参与排序的候选点数量上限（分支因子控制）
  *      vcf        - 是否启用 VCF 连续冲四算杀（低档关掉，让玩家有机会做杀）
  *
@@ -38,7 +38,7 @@
  * 活四 1,000,000、冲四 100,000、活三 90,000……根节点不同落子的分差
  * 常见量级在千到几万之间，所以温度与损失上限都用"万"做单位调的。
  *
- * ── 校准记录 ─────────────────────────────────────────────────────────
+ * ── 历史校准记录（15×15；30×30 基准见 README_CN.md）─────────────────
  *
  * 2026-09-12 Node 驱动机机对战（每对先 4 局换先；邻档对比）：
  *
@@ -89,7 +89,7 @@
    * 字段说明：
    *   label       - 显示名，UI 的难度按钮文案直接读它，不要另外硬编码
    *   depth       - 迭代加深深度上限；0 表示只按时间搜
-   *   timeMs      - go 的时间上限，也是搜索的硬上限（安全网）
+   *   timeMs      - VCF 与 α-β 共用的搜索时间预算
    *   candWidth   - 每层候选宽度（浅层）；深层自动收窄到 max(8, candWidth/2)
    *   vcf         - 是否启用 VCF 算杀（连续冲四取胜搜索）
    *   temperature - softmax 温度（评估分单位）；0 表示永远取引擎首选
@@ -104,11 +104,11 @@
     { level: 3, label: '中级', depth: 4, timeMs: 1000, candWidth: 20, vcf: false, temperature: 3000,  blunder: 0.02,
       desc: '有基本攻防意识，四层搜索，偶尔失手。' },
     { level: 4, label: '高级', depth: 6, timeMs: 1500, candWidth: 24, vcf: true,  temperature: 1200,  blunder: 0,
-      desc: '六层搜索 + 冲四算杀，几乎不犯战术错误。' },
+      desc: '六层搜索 + 限时冲四算杀，优先处理强制攻防。' },
     { level: 5, label: '大师', depth: 8, timeMs: 2500, candWidth: 32, vcf: true,  temperature: 0,     blunder: 0,
-      desc: '八层搜索，开局稳健，攻杀凌厉。' },
+      desc: '八层搜索 + 战术延伸，时间预算 2.5 秒。' },
     { level: 6, label: '宗师', depth: 12, timeMs: 4000, candWidth: 32, vcf: true,  temperature: 0,    blunder: 0,
-      desc: '引擎全力：12 层 + VCF 算杀，时间上限 4 秒。' }
+      desc: '12 层上限 + 战术延伸，时间预算 4 秒。' }
   ];
 
   var DEFAULT_LEVEL = 3;
@@ -260,4 +260,4 @@
   // 便于 Node 里驱动做难度校准
   if (typeof module !== 'undefined' && module.exports) module.exports = Difficulty;
 
-})(typeof self !== 'undefined' ? self : this);
+})(globalThis);
